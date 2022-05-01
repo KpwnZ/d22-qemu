@@ -521,6 +521,33 @@ typedef struct CPUARMState {
         uint64_t tfsr_el[4]; /* tfsre0_el1 is index 0.  */
         uint64_t gcr_el1;
         uint64_t rgsr_el1;
+
+        uint64_t ktrr_mystery0_el1;  // ktrr reg 0
+        uint64_t ktrr_mystery1_el1;  // ktrr reg 1
+        uint64_t ktrr_lock_el1;      // ktrr reg 2
+        uint64_t ktrr_lower_el1;     // ktrr reg 3
+        uint64_t ktrr_upper_el1;     // ktrr reg 4
+        uint64_t ktrr_mystery6_el1;  // ktrr reg 6
+        uint64_t ktrr_mystery7_el1;  // ktrr reg 7
+
+        uint64_t op0_3__op1_0__crn_15__crm_4__op2_1;
+        uint64_t op0_3__op1_0__crn_15__crm_8__op2_0;
+        uint64_t op0_3__op1_0__crn_15__crm_11__op2_1;
+        uint64_t op0_3__op1_0__crn_15__crm_5__op2_1;
+        uint64_t op0_3__op1_0__crn_15__crm_6__op2_1;
+
+        uint64_t op0_3__op1_4__crn_15__crm_2__op2_7;
+        uint64_t op0_3__op1_0__crn_15__crm_0__op2_1;
+        uint64_t op0_3__op1_0__crn_15__crm_6__op2_0;
+        uint64_t op0_3__op1_5__crn_15__crm_6__op2_0;
+        uint64_t op0_3__op1_5__crn_15__crm_6__op2_1;
+
+        uint64_t op0_3__op1_2__crn_15__crm_0__op2_0;
+        uint64_t op0_3__op1_2__crn_15__crm_1__op2_0;
+        uint64_t op0_3__op1_1__crn_15__crm_1__op2_0;
+        uint64_t op0_3__op1_5__crn_15__crm_4__op2_0;
+        uint64_t op0_3__op1_7__crn_15__crm_5__op2_4;
+        uint64_t op0_3__op1_5__crn_15__crm_1__op2_1;
     } cp15;
 
     struct {

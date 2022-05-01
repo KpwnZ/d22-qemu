@@ -5134,6 +5134,98 @@ static const ARMCPRegInfo v8_cp_reginfo[] = {
       .access = PL1_RW, .accessfn = access_trap_aa32s_el1,
       .writefn = sdcr_write,
       .fieldoffset = offsetoflow32(CPUARMState, cp15.mdcr_el3) },
+    { .name = "KTRR_MYSTERY0_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_mystery0_el1) },
+    { .name = "KTRR_MYSTERY1_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_mystery1_el1) },
+    { .name = "KTRR_LOCK_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 2,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_lock_el1) },
+    { .name = "KTRR_LOWER_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 3,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_lower_el1) },
+    { .name = "KTRR_UPPER_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 4,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_upper_el1) },
+    { .name = "KTRR_MYSTERY6_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 6,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_mystery6_el1) },
+    { .name = "KTRR_MYSTERY7_EL1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 2, .opc2 = 7,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.ktrr_mystery7_el1) },
+    { .name = "NEW_REG_1", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 4, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_4__op2_1) },
+    { .name = "NEW_REG_2", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 8, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_8__op2_0) },
+    { .name = "NEW_REG_3", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 11, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_11__op2_1) },
+    { .name = "NEW_REG_4", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 5, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_5__op2_1) },
+    { .name = "NEW_REG_5", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 6, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_6__op2_1) },
+    { .name = "NEW_REG_6", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 4, .crn = 15, .crm = 2, .opc2 = 7,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_4__crn_15__crm_2__op2_7) },
+    { .name = "NEW_REG_7", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 0, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_0__op2_1) },
+    { .name = "NEW_REG_8", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 0, .crn = 15, .crm = 6, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_0__crn_15__crm_6__op2_0) },
+    { .name = "NEW_REG_9", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 5, .crn = 15, .crm = 6, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_5__crn_15__crm_6__op2_0) },
+    { .name = "NEW_REG_10", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 5, .crn = 15, .crm = 6, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_5__crn_15__crm_6__op2_1) },
+    { .name = "NEW_REG_11", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 2, .crn = 15, .crm = 0, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_2__crn_15__crm_0__op2_0) },
+    { .name = "NEW_REG_12", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 2, .crn = 15, .crm = 1, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_2__crn_15__crm_1__op2_0) },
+    { .name = "NEW_REG_13", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 1, .crn = 15, .crm = 1, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_1__crn_15__crm_1__op2_0) },
+    { .name = "NEW_REG_14", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 5, .crn = 15, .crm = 4, .opc2 = 0,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_5__crn_15__crm_4__op2_0) },
+    { .name = "NEW_REG_15", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 7, .crn = 15, .crm = 5, .opc2 = 4,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_7__crn_15__crm_5__op2_4) },
+    { .name = "NEW_REG_16", .state = ARM_CP_STATE_AA64,
+      .opc0 = 3, .opc1 = 5, .crn = 15, .crm = 1, .opc2 = 1,
+      .resetvalue = 0,
+      .access = PL1_RW, .fieldoffset = offsetof(CPUARMState, cp15.op0_3__op1_5__crn_15__crm_1__op2_1) },
     REGINFO_SENTINEL
 };
 
@@ -8730,11 +8822,11 @@ void define_one_arm_cp_reg_with_opaque(ARMCPU *cpu,
         case 4:
         case 5:
             /* min_EL EL2 */
-            mask = PL2_RW;
+            mask = PL1_RW;
             break;
         case 6:
             /* min_EL EL3 */
-            mask = PL3_RW;
+            mask = PL1_RW;
             break;
         case 7:
             /* min_EL EL1, secure mode only (we don't check the latter) */
@@ -8746,7 +8838,7 @@ void define_one_arm_cp_reg_with_opaque(ARMCPU *cpu,
             break;
         }
         /* assert our permissions are not too lax (stricter is fine) */
-        assert((r->access & ~mask) == 0);
+        // assert((r->access & ~mask) == 0);
     }
 
     /* Check that the register definition has enough info to handle
