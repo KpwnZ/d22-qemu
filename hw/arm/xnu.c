@@ -34,30 +34,6 @@ inline uint64_t va2pa(uint64_t va, struct arm_boot_info *info) {
     return (va & 0x3fffffff) + info->loader_start;
 }
 
-// uint8_t get_highest_different_bit_index(hwaddr addr1, hwaddr addr2)
-// {
-//     if ((addr1 == addr2) || (0 == addr1) || (0 == addr2)) {
-//         abort();
-//     }
-//     return (64 - __builtin_clzll(addr1 ^ addr2));
-// }
-
-// uint8_t get_lowest_non_zero_bit_index(hwaddr addr)
-// {
-//     if (0 == addr) {
-//         abort();
-//     }
-//     return __builtin_ctzll(addr);
-// }
-
-// hwaddr get_low_bits_mask_for_bit_index(uint8_t bit_index)
-// {
-//     if (bit_index >= 64) {
-//         abort();
-//     }
-//     return (1 << bit_index) - 1;
-// }
-
 // from alephsecurity
 static void macho_do_find_highest_lowest(struct mach_header_64 *mh, uint64_t *lowaddr,
                                          uint64_t *highaddr) {
