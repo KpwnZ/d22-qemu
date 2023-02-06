@@ -48,7 +48,7 @@ typedef struct xnu_boot_args {
 
 #define kPropNameLength 32
 
-typedef struct {
+typedef struct __attribute__((packed, aligned(1))) {
     uint8_t name[kPropNameLength];
     uint32_t length;
     uint8_t *value;

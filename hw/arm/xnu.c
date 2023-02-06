@@ -91,7 +91,7 @@ static void arm_add_ramdisk_to_devicetree(gchar *dt_data, size_t dt_len, uint64_
         }
     }
     strncpy((char *)prop->name, "RAMDisk", kPropNameLength);
-    uint64_t *value = (uint64_t *)(((char *)(&prop->value))-4);
+    uint64_t *value = (uint64_t *)(&prop->value);
     value[0] = ramdisk_addr;
     value[1] = ramdisk_size;
 }
