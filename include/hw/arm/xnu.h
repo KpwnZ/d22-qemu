@@ -48,6 +48,9 @@ typedef struct xnu_boot_args {
 
 #define kPropNameLength 32
 
+#define get_member_ptr(s, e, ptr, name) \
+    ((e *)(((char *)(ptr)) + offsetof(s, name)))
+
 typedef struct __attribute__((packed, aligned(1))) {
     uint8_t name[kPropNameLength];
     uint32_t length;
@@ -63,12 +66,6 @@ typedef struct {
 
 // convert virtual address to physical address
 uint64_t va2pa(uint64_t va, struct arm_boot_info *info);
-XNUDTNode *arm_do_parse_xnu_devicetree(gchar **blob);
-XNUDTNode *arm_parse_xnu_devicetree(gchar *blob);
-XNUDTProp *arm_read_xnu_devicetree_prop(gchar **blob);
-// void *arm_load_xnu_devicetree(struct arm_boot_info *info,
-//                               gchar *dt,
-//                               gchar *ramdisk_blob);
 int64_t arm_init_memory(struct arm_boot_info *info,
                         hwaddr *pentry,
                         AddressSpace *as,

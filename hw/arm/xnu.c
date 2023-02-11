@@ -26,6 +26,7 @@
 #include "exec/memory.h"
 #include "hw/boards.h"
 #include "hw/arm/xnumem.h"
+#include "hw/arm/xnudt.h"
 
 #define DEBUG_XNU_DEVICETREE
 // #undef DEBUG_XNU_DEVICETREE
@@ -91,7 +92,8 @@ static void arm_add_ramdisk_to_devicetree(gchar *dt_data, size_t dt_len, uint64_
         }
     }
     strncpy((char *)prop->name, "RAMDisk", kPropNameLength);
-    uint64_t *value = (uint64_t *)(&prop->value);
+    uint64_t *value = get_member_ptr(XNUDTProp, uint64_t, prop, value);
+    printf("%d \n", offsetof(XNUDTProp, value));
     value[0] = ramdisk_addr;
     value[1] = ramdisk_size;
 }
@@ -258,9 +260,11 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 
     gsize dt_len;
     g_file_get_contents(info->dtb_filename, &dt_data, &dt_len, NULL);
-    // XNUDTNode *node = arm_parse_xnu_devicetree(dt_data);
-	if(ramdisk_size != 0)
+    XNUDTNode *node = arm_load_xnu_devicetree(dt_data);
+
+    if(ramdisk_size != 0)
         arm_add_ramdisk_to_devicetree(dt_data, dt_len, ramdisk_addr, ramdisk_size);
+
     override_platform(dt_data, dt_len);
     rom_add_blob_fixed_as("xnu.dtb", dt_data, dt_len, phys_ptr, as);
 
