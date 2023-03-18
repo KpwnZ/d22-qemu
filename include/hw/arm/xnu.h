@@ -75,6 +75,18 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 
 #ifndef __APPLE__
 
+/* Constant for the magic field of the mach_header (32-bit architectures) */
+#define	MH_MAGIC	0xfeedface	/* the mach magic number */
+#define MH_CIGAM	NXSwapInt(MH_MAGIC)
+
+/* Constant for the magic field of the mach_header_64 (64-bit architectures) */
+#define MH_MAGIC_64	0xfeedfacf	/* the 64-bit mach magic number */
+#define MH_CIGAM_64	NXSwapInt(MH_MAGIC_64)
+
+/* Constants for the cmd field of new load commands, the type */
+#define LC_SEGMENT_64	0x19	/* 64-bit segment of this file to be mapped */
+#define LC_ROUTINES_64	0x1a	/* 64-bit image routines */
+
 struct mach_header_64 {
 	uint32_t	magic;		/* mach magic number identifier */
 	cpu_type_t	cputype;	/* cpu specifier */
