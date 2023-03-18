@@ -75,6 +75,12 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 
 #ifndef __APPLE__
 
+typedef int32_t 	integer_t;
+typedef integer_t	cpu_type_t;
+typedef integer_t	cpu_subtype_t;
+typedef integer_t	cpu_threadtype_t;
+typedef int			vm_prot_t;
+
 /* Constant for the magic field of the mach_header (32-bit architectures) */
 #define	MH_MAGIC	0xfeedface	/* the mach magic number */
 #define MH_CIGAM	NXSwapInt(MH_MAGIC)
