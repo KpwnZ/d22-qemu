@@ -72,4 +72,58 @@ int64_t arm_init_memory(struct arm_boot_info *info,
                         MemoryRegion *sysmem,
                         hwaddr *pc_addr,
                         hwaddr *bootarg_paddr);
+
+#ifndef __APPLE__
+
+struct mach_header_64 {
+	uint32_t	magic;		/* mach magic number identifier */
+	cpu_type_t	cputype;	/* cpu specifier */
+	cpu_subtype_t	cpusubtype;	/* machine specifier */
+	uint32_t	filetype;	/* type of file */
+	uint32_t	ncmds;		/* number of load commands */
+	uint32_t	sizeofcmds;	/* the size of all the load commands */
+	uint32_t	flags;		/* flags */
+	uint32_t	reserved;	/* reserved */
+};
+
+struct load_command {
+	unsigned long cmd;		/* type of load command */
+	unsigned long cmdsize;		/* total size of command in bytes */
+};
+
+/* Constants for the cmd field of all load commands, the type */
+#define	LC_SEGMENT	0x1	/* segment of this file to be mapped */
+#define	LC_SYMTAB	0x2	/* link-edit stab symbol table info */
+#define	LC_SYMSEG	0x3	/* link-edit gdb symbol table info (obsolete) */
+#define	LC_THREAD	0x4	/* thread */
+#define	LC_UNIXTHREAD	0x5	/* unix thread (includes a stack) */
+#define	LC_LOADFVMLIB	0x6	/* load a specified fixed VM shared library */
+#define	LC_IDFVMLIB	0x7	/* fixed VM shared library identification */
+#define	LC_IDENT	0x8	/* object identification info (obsolete) */
+#define LC_FVMFILE	0x9	/* fixed VM file inclusion (internal use) */
+#define LC_PREPAGE      0xa     /* prepage command (internal use) */
+#define	LC_DYSYMTAB	0xb	/* dynamic link-edit symbol table info */
+#define	LC_LOAD_DYLIB	0xc	/* load a dynamicly linked shared library */
+#define	LC_ID_DYLIB	0xd	/* dynamicly linked shared lib identification */
+#define LC_LOAD_DYLINKER 0xe	/* load a dynamic linker */
+#define LC_ID_DYLINKER	0xf	/* dynamic linker identification */
+#define	LC_PREBOUND_DYLIB 0x10	/* modules prebound for a dynamicly */
+				/*  linked shared library */
+
+struct segment_command_64 {	/* for 64-bit architectures */
+	uint32_t	cmd;		/* LC_SEGMENT_64 */
+	uint32_t	cmdsize;	/* includes sizeof section_64 structs */
+	char		segname[16];	/* segment name */
+	uint64_t	vmaddr;		/* memory address of this segment */
+	uint64_t	vmsize;		/* memory size of this segment */
+	uint64_t	fileoff;	/* file offset of this segment */
+	uint64_t	filesize;	/* amount to map from the file */
+	vm_prot_t	maxprot;	/* maximum VM protection */
+	vm_prot_t	initprot;	/* initial VM protection */
+	uint32_t	nsects;		/* number of sections in segment */
+	uint32_t	flags;		/* flags */
+};
+
+#endif
+
 #endif
