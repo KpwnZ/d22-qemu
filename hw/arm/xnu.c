@@ -93,7 +93,6 @@ static void arm_add_ramdisk_to_devicetree(gchar *dt_data, size_t dt_len, uint64_
     }
     strncpy((char *)prop->name, "RAMDisk", kPropNameLength);
     uint64_t *value = get_member_ptr(XNUDTProp, uint64_t, prop, value);
-    printf("%d \n", offsetof(XNUDTProp, value));
     value[0] = ramdisk_addr;
     value[1] = ramdisk_size;
 }
@@ -131,10 +130,128 @@ static size_t arm_load_xnu_bootargs(struct arm_boot_info *info, AddressSpace *as
     boot_args.deviceTreeP = (void *)dtb_address;
     boot_args.deviceTreeLength = dtb_size;
     boot_args.memSizeActual = 0;
+
     rom_add_blob_fixed_as("xnu_boot_args", &boot_args, sizeof(boot_args), bootargs_addr, as);
-    // allocate_and_copy(mem, as, "xnu_boot_args", bootargs_addr, sizeof(boot_args),
-    //                  &boot_args);
     return sizeof(boot_args);
+}
+
+static gchar *arm_load_xnu_devicetree(
+    gchar *blob, 
+    uint64_t *dt_len,
+    uint64_t ramdisk_addr,
+    uint64_t ramdisk_size) 
+{
+
+	XNUDTNode *root = arm_do_parse_xnu_devicetree(&blob);
+#ifdef DEBUG_XNU_DEVICETREE
+	printf("[+] loaded root node with %u properties and %d children\n", root->nprops, root->nchildren);
+#endif  // DEBUG_XNU_DEVICETREE
+
+    // set cpu0's "timebase-frequency" property to freq
+    uint64_t freq = 2000000;
+    XNUDTNode *node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/cpus/cpu0");
+    assert(node != NULL);
+    XNUDTProp *prop = arm_get_xnu_devicetree_prop(node, "timebase-frequency");
+    if (prop) {
+        memcpy(prop->value, &freq, sizeof(freq));
+    } else {
+        arm_add_xnu_devicetree_prop(root, "timebase-frequency", sizeof(freq), (char *)&freq, "/device-tree/cpus/cpu0");
+    }
+    prop = arm_get_xnu_devicetree_prop(node, "fixed-frequency");
+    if (prop) {
+        memcpy(prop->value, &freq, sizeof(freq));
+    } else {
+        arm_add_xnu_devicetree_prop(root, "fixed-frequency", sizeof(freq), (char *)&freq, "/device-tree/cpus/cpu0");
+    }
+
+    prop = arm_search_xnu_devicetree_prop_by_name(root, "secure-root-prefix");
+    memcpy(prop->name, "no-secure-root-prefix", kPropNameLength);
+    
+    uint64_t seed[8] = {0x12345678, 0x12345678, 0x12345678, 0x12345678,
+                        0x12345678, 0x12345678, 0x12345678, 0x12345678};
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/chosen");
+    assert(node != NULL);
+    prop = arm_get_xnu_devicetree_prop(node, "random-seed");
+    if (prop) {
+        memcpy(prop->value, seed, sizeof(seed));
+    } else {
+        arm_add_xnu_devicetree_prop(root, "random-seed", sizeof(seed), (char *)seed, "/device-tree/chosen");
+    }
+
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io");
+    assert(node != NULL);
+    prop = arm_get_xnu_devicetree_prop(node, "ranges");
+    hwaddr *ranges = (hwaddr *)prop->value;
+    hwaddr soc_base_pa = ranges[1];
+    printf("[+] soc_base_pa: 0x%llx\n", soc_base_pa);
+
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io/uart0");
+    assert(node != NULL);
+    
+    prop = arm_get_xnu_devicetree_prop(node, "reg");
+    assert(prop != NULL);
+
+    hwaddr *uart_offset = (hwaddr *)prop->value;
+    hwaddr uart_base_pa = soc_base_pa + uart_offset[0];
+    printf("[+] uart_base_pa: 0x%llx\n", uart_base_pa);
+
+    uint32_t display_rotation = 0, display_scale = 1;
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/chosen");
+    prop = arm_get_xnu_devicetree_prop(node, "display-rotation");
+    if (prop) {
+        memcpy(&display_rotation, prop->value, sizeof(display_rotation));
+    } else {
+        arm_add_xnu_devicetree_prop(root, "display-rotation", sizeof(display_rotation), (char *)&display_rotation, "/device-tree/chosen");
+    }
+
+    prop = arm_get_xnu_devicetree_prop(node, "display-scale");
+    if (prop) {
+        memcpy(&display_scale, prop->value, sizeof(display_scale));
+    } else {
+        arm_add_xnu_devicetree_prop(root, "display-scale", sizeof(display_scale), (char *)&display_scale, "/device-tree/chosen");
+    }
+
+    uint32_t data = 1;
+    arm_add_xnu_devicetree_prop(root, "security-domain", sizeof(data), (char *)&data, "/device-tree/chosen");
+    arm_add_xnu_devicetree_prop(root, "chip-epoch", sizeof(data), (char *)&data, "/device-tree/chosen");
+    arm_add_xnu_devicetree_prop(root, "debug-enabled", sizeof(data), (char *)&data, "/device-tree/chosen");
+
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io/aic");
+    prop = arm_get_xnu_devicetree_prop(node, "ipid-mask");
+    prop->length = 0;
+
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io/pmgr");
+    prop = arm_get_xnu_devicetree_prop(node, "compatible");
+    memset(prop->value, 0, prop->length);
+
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io");
+    prop = arm_get_xnu_devicetree_prop(node, "compatible");
+    memset(prop->value, 0, prop->length);
+
+    data = 1;
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/defaults");
+    arm_add_xnu_devicetree_prop(root, "no-effaceable-storage", sizeof(data), (char *)&data, "/device-tree/defaults");
+
+    uint64_t rd[2] = {ramdisk_addr, ramdisk_size};
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/chosen/memory-map");
+    arm_add_xnu_devicetree_prop(root, "RAMDisk", sizeof(rd), (char *)rd, "/device-tree/chosen/memory-map");
+
+    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/chosen");
+    prop = arm_get_xnu_devicetree_prop(node, "firmware-version");
+    if (prop) {
+        strcpy((char *)prop->value, "D22-QEMU loader");
+    } else {
+        arm_add_xnu_devicetree_prop(root, "firmware-version", strlen("D22-QEMU loader") + 1, "D22-QEMU loader", "/device-tree/chosen");
+    }
+    
+    // now write the device tree to memory
+    uint64_t dtb_size = 0;
+
+    uint8_t *dtb = NULL;
+    arm_write_devicetree_to_memory(root, &dtb, &dtb_size);
+    printf("[+] new devicetree size: 0x%llx\n", dtb_size);
+
+	return (gchar *)dtb;
 }
 
 int64_t arm_init_memory(struct arm_boot_info *info,
@@ -260,12 +377,9 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 
     gsize dt_len;
     g_file_get_contents(info->dtb_filename, &dt_data, &dt_len, NULL);
-    XNUDTNode *node = arm_load_xnu_devicetree(dt_data);
+    assert(dt_data != NULL);
 
-    if(ramdisk_size != 0)
-        arm_add_ramdisk_to_devicetree(dt_data, dt_len, ramdisk_addr, ramdisk_size);
-
-    override_platform(dt_data, dt_len);
+    dt_data = arm_load_xnu_devicetree(dt_data, (uint64_t *)&dt_len, ramdisk_addr, ramdisk_size);
     rom_add_blob_fixed_as("xnu.dtb", dt_data, dt_len, phys_ptr, as);
 
     phys_ptr += (align64(dt_len));
@@ -293,7 +407,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
     
     g_free(raw_data);
     g_free(rom_buf);
-    g_free(dt_data);
+    // g_free(dt_data);
 	printf("[*] arm_load_macho: done\n");
     return high - low;
     // return ret;

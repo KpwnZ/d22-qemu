@@ -16,36 +16,6 @@
     
 // }
 
-XNUDTNode *arm_load_xnu_devicetree(gchar *blob) 
-{
-	XNUDTNode *root = arm_do_parse_xnu_devicetree(&blob);
-#ifdef DEBUG_XNU_DEVICETREE
-	printf("[+] loaded root node with %u properties and %d children\n", root->nprops, root->nchildren);
-#endif  // DEBUG_XNU_DEVICETREE
-
-    XNUDTNode *child = arm_get_xnu_devicetree_node_by_name(root, "arm-io");
-    assert(child != NULL);
-    
-    XNUDTProp *prop = arm_get_xnu_devicetree_prop(child, "ranges");
-    assert(prop != NULL);
-
-    hwaddr *ranges = (hwaddr *)prop->value;
-    hwaddr soc_base_pa = ranges[1];
-    printf("[+] soc_base_pa: 0x%llx\n", soc_base_pa);
-
-    child = arm_get_xnu_devicetree_node_by_name(child, "uart0");
-    assert(child != NULL);
-    
-    prop = arm_get_xnu_devicetree_prop(child, "reg");
-    assert(prop != NULL);
-
-    hwaddr *uart_offset = (hwaddr *)prop->value;
-    hwaddr uart_base_pa = soc_base_pa + uart_offset[0];
-    printf("[+] uart_base_pa: 0x%llx\n", uart_base_pa);
-    
-	return root;
-}
-
 XNUDTNode *arm_do_parse_xnu_devicetree(gchar **blob) {
     XNUDTNode *node = calloc(sizeof(XNUDTNode), 1);
     memcpy(node, *blob, sizeof(XNUDTNode) - sizeof(GList *) * 2);
@@ -160,6 +130,23 @@ XNUDTNode *arm_get_xnu_devicetree_node_by_name(XNUDTNode *node, const char *name
     return NULL;
 }
 
+XNUDTNode *arm_get_xnu_devicetree_node_by_path(XNUDTNode *node, const char *path) {
+    assert(node != NULL);
+    assert(path != NULL);
+    char *p = strdup(path);
+    char *node_name;
+    node_name = strtok(p, "/");
+    while (node_name != NULL) {
+        node_name = strtok(NULL, "/");
+        if (node_name) node = arm_get_xnu_devicetree_node_by_name(node, node_name);
+        if (!node) {
+            printf("node not found: %s", node_name);
+            exit(1);
+        }
+    }
+    return node;
+}
+
 void arm_remove_xnu_devicetree_prop(XNUDTNode *root, const char *name, const char *path) {
     assert(root != NULL);
     assert(name != NULL);
@@ -209,6 +196,61 @@ void arm_add_xnu_devicetree_prop(XNUDTNode *root, const char *name, uint32_t len
     memcpy(prop->value, value, len);
     root->properties = g_list_append(root->properties, prop);
     root->nprops++;
+}
+
+static uint64_t get_devicetree_size(XNUDTNode *root) {
+    // get the size of the flattened device tree
+    uint64_t size = 0;
+    size += sizeof(uint32_t) * 2; // nprops, nchildren
+    for (GList *l = root->properties; l != NULL; l = l->next) {
+        XNUDTProp *prop = (XNUDTProp *)l->data;
+        size += sizeof(uint8_t) * kPropNameLength; // name
+        size += sizeof(uint32_t); // length
+        size += sizeof(uint8_t) * ALIGN(prop->length); // value
+    }
+    for (GList *l = root->children; l != NULL; l = l->next) {
+        XNUDTNode *child = (XNUDTNode *)l->data;
+        size += get_devicetree_size(child);
+    }
+    return size;
+}
+
+static void do_write_devicetree_to_memory(XNUDTNode *root, uint8_t **buf, uint64_t *size) {
+    assert(root != NULL);
+
+    // write the node
+    uint32_t nprops = root->nprops;
+    uint32_t nchildren = root->nchildren;
+    memcpy(*buf, &nprops, sizeof(uint32_t));
+    *buf += sizeof(uint32_t);
+    memcpy(*buf, &nchildren, sizeof(uint32_t));
+    *buf += sizeof(uint32_t);
+    *size += sizeof(uint32_t) * 2;
+
+    // write the properties
+    for (GList *l = root->properties; l != NULL; l = l->next) {
+        XNUDTProp *prop = (XNUDTProp *)l->data;
+        memcpy(*buf, &prop->name[0], sizeof(uint8_t) * kPropNameLength);
+        *buf += sizeof(uint8_t) * kPropNameLength;
+        memcpy(*buf, &prop->length, sizeof(uint32_t));
+        *buf += sizeof(uint32_t);
+        memcpy(*buf, prop->value, sizeof(uint8_t) * ALIGN(prop->length));
+        *buf += sizeof(uint8_t) * ALIGN(prop->length);
+        *size += sizeof(uint8_t) * kPropNameLength;
+        *size += sizeof(uint32_t);
+        *size += sizeof(uint8_t) * ALIGN(prop->length);
+    }
+    // write the children
+    for (GList *l = root->children; l != NULL; l = l->next) {
+        XNUDTNode *child = (XNUDTNode *)l->data;
+        do_write_devicetree_to_memory(child, buf, size);
+    }
+}
+
+void arm_write_devicetree_to_memory(XNUDTNode *root, uint8_t **buf, uint64_t *size) {
+    *buf = malloc(get_devicetree_size(root));
+    uint8_t *p = *buf;
+    do_write_devicetree_to_memory(root, &p, size);
 }
 
 static void do_write_devicetree(XNUDTNode *root, FILE *fp) {
