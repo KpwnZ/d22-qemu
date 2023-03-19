@@ -105,8 +105,8 @@ struct mach_header_64 {
 };
 
 struct load_command {
-	unsigned long cmd;		/* type of load command */
-	unsigned long cmdsize;		/* total size of command in bytes */
+    uint32_t cmd;               /* type of load command */
+    uint32_t cmdsize;           /* total size of command in bytes */
 };
 
 /* Constants for the cmd field of all load commands, the type */
