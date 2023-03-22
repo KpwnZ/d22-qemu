@@ -348,6 +348,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
     hwaddr rom_base = vtop_bases(low, phys_base, virt_base);
     printf("[*] kernel phy base: 0x%llx\n", rom_base);
     rom_add_blob_fixed_as("xnu.kernel", rom_buf, size, rom_base, as);
+    g_free(rom_buf);
     // allocate_and_copy(sysmem, as, "macho", rom_base, size, rom_buf);
 	used_ram += (align64(high) - low);
 
@@ -369,6 +370,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 		ramdisk_addr = phys_ptr;
         g_file_get_contents(info->initrd_filename, &ramdisk_data, &ramdisk_size, NULL);
         rom_add_blob_fixed_as("xnu.ramdisk", ramdisk_data, ramdisk_size, phys_ptr, as);
+        g_free(ramdisk_data);
         phys_ptr += align64(ramdisk_size + 0x30000);
     }
 
@@ -381,6 +383,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 
     dt_data = arm_load_xnu_devicetree(dt_data, (uint64_t *)&dt_len, ramdisk_addr, ramdisk_size);
     rom_add_blob_fixed_as("xnu.dtb", dt_data, dt_len, phys_ptr, as);
+    g_free(dt_data);
 
     phys_ptr += (align64(dt_len));
     used_ram += (align64(dt_len));
@@ -405,9 +408,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
                           info->ram_size);
     phys_base += (sizeof(struct xnu_boot_args) + 0xffffull) & ~0xffffull;
     
-    g_free(raw_data);
-    g_free(rom_buf);
-    // g_free(dt_data);
+    
 	printf("[*] arm_load_macho: done\n");
     return high - low;
     // return ret;
