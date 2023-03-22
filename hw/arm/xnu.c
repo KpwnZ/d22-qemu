@@ -348,6 +348,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
     hwaddr rom_base = vtop_bases(low, phys_base, virt_base);
     printf("[*] kernel phy base: 0x%llx\n", rom_base);
     rom_add_blob_fixed_as("xnu.kernel", rom_buf, size, rom_base, as);
+    g_free(data);
     g_free(rom_buf);
     // allocate_and_copy(sysmem, as, "macho", rom_base, size, rom_buf);
 	used_ram += (align64(high) - low);
@@ -408,7 +409,7 @@ int64_t arm_init_memory(struct arm_boot_info *info,
                           info->ram_size);
     phys_base += (sizeof(struct xnu_boot_args) + 0xffffull) & ~0xffffull;
     
-    
+
 	printf("[*] arm_load_macho: done\n");
     return high - low;
     // return ret;
