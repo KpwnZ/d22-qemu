@@ -28,6 +28,7 @@ typedef struct D22IDeviceMachineState {
     hwaddr uart_serial_pa;
     hwaddr pc_pa;
     ARMCPU *cpu;
+    int enable_ramfb;
     struct arm_boot_info bootinfo;
 } D22IDeviceMachineState;
 

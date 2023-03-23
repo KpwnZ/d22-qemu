@@ -76,7 +76,7 @@ static void d22_machine_init(MachineState *machine)
     s->bootinfo.initrd_filename = s->ramdisk_fn;
     s->bootinfo.kernel_cmdline = s->bootargs;
     s->bootinfo.loader_start = 0x40000000;
-    
+
     qemu_devices_reset();
     MemoryRegion *sysram = g_new(MemoryRegion, 1);
 
@@ -185,6 +185,22 @@ static void d22_machine_set_ram_size(Object *obj, const char *value, Error **err
     s->bootinfo.ram_size = size;
 }
 
+static char *d22_machine_get_ramfb(Object *obj, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    return strdup(s->enable_ramfb ? "on" : "off");
+}
+
+static void d22_machine_set_ramfb(Object *obj, const char *value, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    if (strcmp(value, "on") == 0) {
+        s->enable_ramfb = 1;
+    } else if (strcmp(value, "off") != 0) {
+        s->enable_ramfb = 0;
+    }
+}
+
 static void d22_instance_init(Object *obj) {
     object_property_add_str(obj, "kernelcache",
                             d22_machine_get_boot_kernel,
@@ -203,6 +219,9 @@ static void d22_instance_init(Object *obj) {
     object_property_add_str(obj, "ram-size",
                             d22_machine_get_ram_size,
                             d22_machine_set_ram_size);
+    object_property_add_str(obj, "ramfb",
+                            d22_machine_get_ramfb,
+                            d22_machine_set_ramfb);
 }
 
 static const TypeInfo d22_machine_info = {
