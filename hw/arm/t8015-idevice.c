@@ -71,21 +71,17 @@ static void d22_machine_init(MachineState *machine)
 
     // setting up memory
     uint64_t entry;
-    struct arm_boot_info binfo = {
-        .kernel_filename = s->kernelcache_fn,
-        .dtb_filename = s->devicetree_fn,
-        .initrd_filename = s->ramdisk_fn,
-        .loader_start = 0x40000000,
-        .ram_size = 0x80000000,
-        .kernel_cmdline = s->bootargs,
-    };
-    s->bootinfo = binfo;
-
+    s->bootinfo.kernel_filename = s->kernelcache_fn;
+    s->bootinfo.dtb_filename = s->devicetree_fn;
+    s->bootinfo.initrd_filename = s->ramdisk_fn;
+    s->bootinfo.kernel_cmdline = s->bootargs;
+    s->bootinfo.loader_start = 0x40000000;
+    
     qemu_devices_reset();
     MemoryRegion *sysram = g_new(MemoryRegion, 1);
 
-    memory_region_init_ram(sysram, NULL, "sys.ram", 0x80000000, NULL);
-    memory_region_add_subregion(sysmem, 0x40000000, sysram);
+    memory_region_init_ram(sysram, NULL, "sys.ram", s->bootinfo.ram_size, NULL);
+    memory_region_add_subregion(sysmem, s->bootinfo.loader_start, sysram);
 
     MemoryRegion *amcc = g_new(MemoryRegion, 1);
     MemoryRegion *aic = g_new(MemoryRegion, 1);
@@ -175,6 +171,20 @@ static void d22_machine_set_bootargs(Object *obj, const char *value, Error **err
     g_strlcpy(s->bootargs, value, sizeof(s->bootargs));
 }
 
+static void d22_machine_get_ram_size(Object *obj, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    uint64_t value = s->bootinfo.ram_size;
+    s->bootinfo.ram_size = value;
+}
+
+static void d22_machine_set_ram_size(Object *obj, const char *value, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    uint64_t size = strtoull(value, NULL, 0);
+    s->bootinfo.ram_size = size;
+}
+
 static void d22_instance_init(Object *obj) {
     object_property_add_str(obj, "kernelcache",
                             d22_machine_get_boot_kernel,
@@ -190,6 +200,9 @@ static void d22_instance_init(Object *obj) {
     object_property_add_str(obj, "bootargs",
                             d22_machine_get_bootargs,
                             d22_machine_set_bootargs);
+    object_property_add_str(obj, "ram-size",
+                            d22_machine_get_ram_size,
+                            d22_machine_set_ram_size);
 }
 
 static const TypeInfo d22_machine_info = {
