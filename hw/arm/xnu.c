@@ -81,7 +81,8 @@ void macho_file_highest_lowest(const char *data, hwaddr phys_base,
     *virt_base = align64low(*lowest) & (~0x3fffffff);
 }
 
-static void arm_add_ramdisk_to_devicetree(gchar *dt_data, size_t dt_len, uint64_t ramdisk_addr, uint64_t ramdisk_size)
+static void arm_add_ramdisk_to_devicetree(gchar *dt_data, size_t dt_len, 
+                                          uint64_t ramdisk_addr, uint64_t ramdisk_size)
 {
     gchar *dt = dt_data;
     XNUDTProp *prop = NULL;
@@ -135,18 +136,18 @@ static size_t arm_load_xnu_bootargs(struct arm_boot_info *info, AddressSpace *as
     return sizeof(boot_args);
 }
 
-static gchar *arm_load_xnu_devicetree(
-    gchar *blob, 
-    uint64_t *dt_len,
-    uint64_t ramdisk_addr,
-    uint64_t ramdisk_size) 
-{
+XNUDTNode *arm_load_xnu_devicetree(gchar *blob) {
 
 	XNUDTNode *root = arm_do_parse_xnu_devicetree(&blob);
 #ifdef DEBUG_XNU_DEVICETREE
 	printf("[+] loaded root node with %u properties and %d children\n", root->nprops, root->nchildren);
 #endif  // DEBUG_XNU_DEVICETREE
+    return root;
+}
 
+static gchar *preprocess_devicetree(
+    XNUDTNode *root, uint64_t *dt_len, 
+    uint64_t ramdisk_addr, uint64_t ramdisk_size) {
     // set cpu0's "timebase-frequency" property to freq
     uint64_t freq = 2000000;
     XNUDTNode *node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/cpus/cpu0");
@@ -382,8 +383,9 @@ int64_t arm_init_memory(struct arm_boot_info *info,
     g_file_get_contents(info->dtb_filename, &dt_data, &dt_len, NULL);
     assert(dt_data != NULL);
 
-    dt_data = arm_load_xnu_devicetree(dt_data, (uint64_t *)&dt_len, ramdisk_addr, ramdisk_size);
-    rom_add_blob_fixed_as("xnu.dtb", dt_data, dt_len, phys_ptr, as);
+    XNUDTNode *root = arm_load_xnu_devicetree(dt_data);
+    gchar *new_dt_data = preprocess_devicetree(root, (uint64_t *)&dt_len, ramdisk_addr, ramdisk_size);
+    rom_add_blob_fixed_as("xnu.dtb", new_dt_data, dt_len, phys_ptr, as);
     g_free(dt_data);
 
     phys_ptr += (align64(dt_len));

@@ -66,6 +66,8 @@ typedef struct {
 
 // convert virtual address to physical address
 uint64_t va2pa(uint64_t va, struct arm_boot_info *info);
+XNUDTNode *arm_load_xnu_devicetree(gchar *blob);
+
 int64_t arm_init_memory(struct arm_boot_info *info,
                         hwaddr *pentry,
                         AddressSpace *as,
