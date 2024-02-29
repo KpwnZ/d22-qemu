@@ -246,13 +246,11 @@ static gchar *preprocess_devicetree(
     }
     
     // now write the device tree to memory
-    uint64_t dtb_size = 0;
-
     uint8_t *dtb = NULL;
-    arm_write_devicetree_to_memory(root, &dtb, &dtb_size);
-    printf("[+] new devicetree size: 0x%llx\n", dtb_size);
+    arm_write_devicetree_to_memory(root, &dtb, dt_len);
+    printf("[+] new devicetree size: 0x%llx\n", *dt_len);
 
-	return (gchar *)dtb;
+    return (gchar *)dtb;
 }
 
 int64_t arm_init_memory(struct arm_boot_info *info,
