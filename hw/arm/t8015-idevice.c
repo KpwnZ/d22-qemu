@@ -69,13 +69,19 @@ static void d22_machine_init(MachineState *machine)
 
     s->cpu = cpu;
 
-    // setting up memory
+    // setting up bootinfo
     uint64_t entry;
     s->bootinfo.kernel_filename = s->kernelcache_fn;
     s->bootinfo.dtb_filename = s->devicetree_fn;
     s->bootinfo.initrd_filename = s->ramdisk_fn;
     s->bootinfo.kernel_cmdline = s->bootargs;
     s->bootinfo.loader_start = 0x40000000;
+
+    gsize dt_len = 0;
+    gchar *dt_data = NULL;
+    g_file_get_contents(s->bootinfo.dtb_filename, &dt_data, &dt_len, NULL);
+    assert(dt_data != NULL);
+    XNUDTNode *devicetree = arm_load_xnu_devicetree(dt_data);
 
     qemu_devices_reset();
     MemoryRegion *sysram = g_new(MemoryRegion, 1);
@@ -94,7 +100,7 @@ static void d22_machine_init(MachineState *machine)
 
     qemu_devices_reset();
 
-    arm_init_memory(&s->bootinfo, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
+    xnu_init_memory(&s->bootinfo, devicetree, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
 
     d22_create_s3c_uart(serial_hd(0));
 

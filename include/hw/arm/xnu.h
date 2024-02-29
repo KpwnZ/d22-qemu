@@ -68,7 +68,8 @@ typedef struct {
 uint64_t va2pa(uint64_t va, struct arm_boot_info *info);
 XNUDTNode *arm_load_xnu_devicetree(gchar *blob);
 
-int64_t arm_init_memory(struct arm_boot_info *info,
+int64_t xnu_init_memory(struct arm_boot_info *info,
+						XNUDTNode *devicetree,
                         hwaddr *pentry,
                         AddressSpace *as,
                         MemoryRegion *sysmem,

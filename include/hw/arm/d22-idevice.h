@@ -6,6 +6,7 @@
 #include "hw/boards.h"
 #include "hw/arm/boot.h"
 #include "hw/arm/xnu.h"
+#include "hw/arm/xnudt.h"
 #include "exec/memory.h"
 #include "cpu.h"
 #include "sysemu/kvm.h"
@@ -24,6 +25,7 @@ typedef struct D22IDeviceMachineState {
     char devicetree_fn[1024];
     char ramdisk_fn[1024];
     char bootargs[1024];
+    XNUDTNode *devicetree;
     hwaddr bootargs_pa;
     hwaddr uart_serial_pa;
     hwaddr pc_pa;

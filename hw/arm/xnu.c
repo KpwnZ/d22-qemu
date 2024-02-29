@@ -253,7 +253,8 @@ static gchar *preprocess_devicetree(
     return (gchar *)dtb;
 }
 
-int64_t arm_init_memory(struct arm_boot_info *info,
+int64_t xnu_init_memory(struct arm_boot_info *info,
+                               XNUDTNode *devicetree,
                                hwaddr *pentry,
                                AddressSpace *as,
 							   MemoryRegion *sysmem,
@@ -376,12 +377,9 @@ int64_t arm_init_memory(struct arm_boot_info *info,
 
     gchar *dt_data = NULL;
     uint64_t dtb_va = ptov_static(phys_ptr);
+    uint64_t dt_len = 0;
 
-    gsize dt_len;
-    g_file_get_contents(info->dtb_filename, &dt_data, &dt_len, NULL);
-    assert(dt_data != NULL);
-
-    XNUDTNode *root = arm_load_xnu_devicetree(dt_data);
+    XNUDTNode *root = devicetree;
     gchar *new_dt_data = preprocess_devicetree(root, (uint64_t *)&dt_len, ramdisk_addr, ramdisk_size);
     rom_add_blob_fixed_as("xnu.dtb", new_dt_data, dt_len, phys_ptr, as);
     g_free(dt_data);
