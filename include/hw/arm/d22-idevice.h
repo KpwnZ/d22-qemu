@@ -32,6 +32,9 @@ typedef struct D22IDeviceMachineState {
     ARMCPU *cpu;
     int enable_ramfb;
     struct arm_boot_info bootinfo;
+    
+    hwaddr soc_base_pa;
+    hwaddr soc_size;
 } D22IDeviceMachineState;
 
 #endif

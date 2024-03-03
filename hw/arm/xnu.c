@@ -179,22 +179,11 @@ static gchar *preprocess_devicetree(
         arm_add_xnu_devicetree_prop(root, "random-seed", sizeof(seed), (char *)seed, "/device-tree/chosen");
     }
 
-    node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io");
-    assert(node != NULL);
-    prop = arm_get_xnu_devicetree_prop(node, "ranges");
-    hwaddr *ranges = (hwaddr *)prop->value;
-    hwaddr soc_base_pa = ranges[1];
-    printf("[+] soc_base_pa: 0x%llx\n", soc_base_pa);
-
     node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io/uart0");
     assert(node != NULL);
     
     prop = arm_get_xnu_devicetree_prop(node, "reg");
     assert(prop != NULL);
-
-    hwaddr *uart_offset = (hwaddr *)prop->value;
-    hwaddr uart_base_pa = soc_base_pa + uart_offset[0];
-    printf("[+] uart_base_pa: 0x%llx\n", uart_base_pa);
 
     uint32_t display_rotation = 0, display_scale = 1;
     node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/chosen");
@@ -218,8 +207,8 @@ static gchar *preprocess_devicetree(
     arm_add_xnu_devicetree_prop(root, "debug-enabled", sizeof(data), (char *)&data, "/device-tree/chosen");
 
     node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io/aic");
-    prop = arm_get_xnu_devicetree_prop(node, "ipid-mask");
-    prop->length = 0;
+    // prop = arm_get_xnu_devicetree_prop(node, "ipid-mask");
+    // prop->length = 0;
 
     node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io/pmgr");
     prop = arm_get_xnu_devicetree_prop(node, "compatible");
@@ -227,7 +216,23 @@ static gchar *preprocess_devicetree(
 
     node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/arm-io");
     prop = arm_get_xnu_devicetree_prop(node, "compatible");
-    memset(prop->value, 0, prop->length);
+    // memset(prop->value, 0, prop->length);
+    for (GList *l = node->children; l != NULL; l = l->next) {
+        XNUDTNode *child = (XNUDTNode *)l->data;
+        if (!child) break;
+        XNUDTProp *name = arm_get_xnu_devicetree_prop(child, "name");
+        if (name) {
+            if (strcmp((char *)name->value, "aic") && strcmp((char *)name->value, "aic-timebase")) {
+                if (strncmp((char *)name->value, "uart", 4) == 0) {
+                    continue;
+                }
+                XNUDTProp *comp = arm_get_xnu_devicetree_prop(child, "compatible");
+                if (comp) {
+                    memset(comp->value, 0, comp->length);
+                }
+            }
+        }
+    }
 
     data = 1;
     node = arm_get_xnu_devicetree_node_by_path(root, "/device-tree/defaults");

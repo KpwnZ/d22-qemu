@@ -10,6 +10,7 @@
 #include "exec/memory.h"
 #include "hw/platform-bus.h"
 #include "hw/arm/exynos4210.h"
+#include "hw/arm/apple-aic.h"
 
 static void d22_create_s3c_uart(Chardev *chr) 
 {
@@ -26,6 +27,15 @@ static void d22_create_s3c_uart(Chardev *chr)
     if (!dev) {
         abort();
     }
+}
+
+static void d22_create_aic(void *opaque, XNUDTNode *node) {
+    assert(node != NULL);
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE((MachineState *)opaque);
+    AppleAICState *aic = create_apple_aic(s->soc_base_pa, 1, node);
+    memory_region_add_subregion_overlap(
+        get_system_memory(), aic->mapping_base, aic->chip.iomem, 0);
+    qdev_connect_gpio_out(DEVICE(aic), 0, qdev_get_gpio_in(DEVICE(s->cpu), ARM_CPU_FIQ));
 }
 
 static void d22_cpu_reset(void *opaque) 
@@ -82,8 +92,17 @@ static void d22_machine_init(MachineState *machine)
     g_file_get_contents(s->bootinfo.dtb_filename, &dt_data, &dt_len, NULL);
     assert(dt_data != NULL);
     XNUDTNode *devicetree = arm_load_xnu_devicetree(dt_data);
+    s->devicetree = devicetree;
 
-    qemu_devices_reset();
+    // process devicetree
+    XNUDTNode *node = arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io");
+    assert(node != NULL);
+    XNUDTProp *prop = arm_get_xnu_devicetree_prop(node, "ranges");
+    assert(prop != NULL);
+    hwaddr *ranges = (uint64_t *)prop->value;
+    s->soc_base_pa = ranges[1];
+    s->soc_size = ranges[2];
+
     MemoryRegion *sysram = g_new(MemoryRegion, 1);
 
     memory_region_init_ram(sysram, NULL, "sys.ram", s->bootinfo.ram_size, NULL);
@@ -101,7 +120,7 @@ static void d22_machine_init(MachineState *machine)
     qemu_devices_reset();
 
     xnu_init_memory(&s->bootinfo, devicetree, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
-
+    d22_create_aic(s, arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/aic"));
     d22_create_s3c_uart(serial_hd(0));
 
     qdev_connect_gpio_out(cpudev, GTIMER_PHYS, qdev_get_gpio_in(cpudev, ARM_CPU_FIQ));
