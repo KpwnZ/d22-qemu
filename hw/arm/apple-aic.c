@@ -26,7 +26,9 @@
 #include "hw/arm/xnudt.h"
 #include "hw/arm/apple-aic.h"
 
-#ifdef DEBUG_APPLE_AIC
+#define DEBUG_APPLE_AIC 1
+
+#if DEBUG_APPLE_AIC
 #define APPLE_AIC_DEBUG_PRINT(fmt, ...) \
     do { \
         fprintf(stdout, "\033[33m[AppleAIC] " fmt "\033[0m", ## __VA_ARGS__); \
@@ -34,7 +36,7 @@
         fflush(stdout); \
     } while (0)
 #else
-#define APPLE_AIC_DEBUG_PRINT(fmt, ...) do { } while (0)
+#define APPLE_AIC_DEBUG_PRINT(fmt, ...)
 #endif
 
 static uint64_t apple_aic_read(void *opaque, hwaddr offset, unsigned size) {
@@ -45,7 +47,7 @@ static uint64_t apple_aic_read(void *opaque, hwaddr offset, unsigned size) {
         switch (offset)
         {
         case 0x0:
-            ret = 0;
+            ret = 2;
             break;
         case 0x4:
             ret = aic->irq_cnt;
@@ -73,7 +75,7 @@ static const MemoryRegionOps apple_aic_ops = {
 
 static void apple_aic_set_irq(void *opaque, int irq, int level) {
     AppleAICState *aic = APPLE_AIC(opaque);
-    APPLE_AIC_DEBUG_PRINT("[AppleAIC] set irq %d level %d\n", irq, level);
+    APPLE_AIC_DEBUG_PRINT("set irq %d level %d\n", irq, level);
 }
 
 static void init_apple_aic(Object *opaque) {
@@ -119,6 +121,7 @@ AppleAICState *create_apple_aic(hwaddr soc_base, unsigned cpus_cnt, XNUDTNode *n
     assert(prop);
     hwaddr mapping_base = soc_base + (*(uint64_t *)prop->value);
     hwaddr mapping_size = (*(uint64_t *)(prop->value + 8));
+    APPLE_AIC_DEBUG_PRINT("mapping base: 0x%lx, size: 0x%lx\n", mapping_base, mapping_size);
 
     prop = arm_get_xnu_devicetree_prop(node, "ipid-mask");
     assert(prop);

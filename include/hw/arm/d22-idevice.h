@@ -10,6 +10,7 @@
 #include "exec/memory.h"
 #include "cpu.h"
 #include "sysemu/kvm.h"
+#include "hw/arm/apple-aic.h"
 
 #define DEBUG_D22_IDEVICE
 
@@ -35,6 +36,10 @@ typedef struct D22IDeviceMachineState {
     
     hwaddr soc_base_pa;
     hwaddr soc_size;
+    struct {
+        AppleAICState *aic;
+    } peripherals;
+    
 } D22IDeviceMachineState;
 
 #endif

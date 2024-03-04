@@ -11,19 +11,22 @@
 #include "hw/platform-bus.h"
 #include "hw/arm/exynos4210.h"
 #include "hw/arm/apple-aic.h"
+#include "hw/arm/xnudt.h"
 
-static void d22_create_s3c_uart(Chardev *chr) 
+static void d22_create_s3c_uart(D22IDeviceMachineState* m, Chardev *chr, XNUDTNode *node)
 {
+    assert(node != NULL);
     qemu_irq irq;
     DeviceState *d;
     SysBusDevice *s;
-    hwaddr base = 0x22e600000;
- 
-    d = qdev_new(TYPE_PLATFORM_BUS_DEVICE);
-    s = SYS_BUS_DEVICE(d);
-    sysbus_init_irq(s, &irq);
-
-    DeviceState *dev = exynos4210_uart_create(base, 256, 0, chr, irq);
+    hwaddr base = 0; //0x22e600000;
+    XNUDTProp *prop = arm_get_xnu_devicetree_prop(node, "reg");
+    assert(prop != NULL);
+    base = *(uint64_t *)(prop->value);
+    base += m->soc_base_pa;
+    prop = arm_get_xnu_devicetree_prop(node, "interrupts");
+    int int_v = *(uint32_t *)(prop->value);
+    DeviceState *dev = exynos4210_uart_create(base, 256, 0, chr, qdev_get_gpio_in(DEVICE(m->peripherals.aic), int_v));
     if (!dev) {
         abort();
     }
@@ -36,6 +39,7 @@ static void d22_create_aic(void *opaque, XNUDTNode *node) {
     memory_region_add_subregion_overlap(
         get_system_memory(), aic->mapping_base, aic->chip.iomem, 0);
     qdev_connect_gpio_out(DEVICE(aic), 0, qdev_get_gpio_in(DEVICE(s->cpu), ARM_CPU_FIQ));
+    s->peripherals.aic = aic;
 }
 
 static void d22_cpu_reset(void *opaque) 
@@ -114,14 +118,11 @@ static void d22_machine_init(MachineState *machine)
     memory_region_init_ram(amcc, NULL, "amcc.ram", 0x00300000, NULL);
     memory_region_add_subregion(sysmem, 0x200000000, amcc);
 
-    memory_region_init_ram(aic, NULL, "aic.ram", 0x00009000, NULL);
-    memory_region_add_subregion(sysmem, 0x232100000, aic);
-
     qemu_devices_reset();
 
     xnu_init_memory(&s->bootinfo, devicetree, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
     d22_create_aic(s, arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/aic"));
-    d22_create_s3c_uart(serial_hd(0));
+    d22_create_s3c_uart(s, serial_hd(0), arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io/uart0"));
 
     qdev_connect_gpio_out(cpudev, GTIMER_PHYS, qdev_get_gpio_in(cpudev, ARM_CPU_FIQ));
 
