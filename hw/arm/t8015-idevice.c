@@ -19,7 +19,7 @@ static void d22_create_s3c_uart(D22IDeviceMachineState* m, Chardev *chr, XNUDTNo
     qemu_irq irq;
     DeviceState *d;
     SysBusDevice *s;
-    hwaddr base = 0; //0x22e600000;
+    hwaddr base = 0; // 0x22e600000;
     XNUDTProp *prop = arm_get_xnu_devicetree_prop(node, "reg");
     assert(prop != NULL);
     base = *(uint64_t *)(prop->value);
@@ -36,6 +36,7 @@ static void d22_create_aic(void *opaque, XNUDTNode *node) {
     assert(node != NULL);
     D22IDeviceMachineState *s = D22_IDEVICE_MACHINE((MachineState *)opaque);
     AppleAICState *aic = create_apple_aic(s->soc_base_pa, 1, node);
+    aic->cpu = s->cpu;
     memory_region_add_subregion_overlap(
         get_system_memory(), aic->mapping_base, aic->chip.iomem, 0);
     qdev_connect_gpio_out(DEVICE(aic), 0, qdev_get_gpio_in(DEVICE(s->cpu), ARM_CPU_FIQ));
@@ -107,6 +108,31 @@ static void d22_machine_init(MachineState *machine)
     s->soc_base_pa = ranges[1];
     s->soc_size = ranges[2];
 
+    node = arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/chosen");
+    arm_add_xnu_devicetree_prop(devicetree, "dram-base", 8, (const char *)&s->bootinfo.loader_start, "/device-tree/chosen");
+    arm_add_xnu_devicetree_prop(devicetree, "dram-size", 8, (const char *)&s->bootinfo.ram_size, "/device-tree/chosen");
+
+    uint32_t aperture_count = 0, aperture_size = 0;
+    arm_add_xnu_devicetree_prop(devicetree, "aperture-count", 4, (const char *)&aperture_count, "/device-tree/chosen/lock-regs/amcc");
+    arm_add_xnu_devicetree_prop(devicetree, "aperture-size", 4, (const char *)&aperture_size, "/device-tree/chosen/lock-regs/amcc");
+
+    uint32_t plane_count = 0;
+    hwaddr amcc_addr = 0;
+    uint32_t data32 = 0;
+    arm_add_xnu_devicetree_prop(devicetree, "plane-count", 4, (const char *)&plane_count, "/device-tree/chosen/lock-regs/amcc");
+    arm_add_xnu_devicetree_prop(devicetree, "aperture-phys-addr", 0, (const char *)&amcc_addr, "/device-tree/chosen/lock-regs/amcc");
+    arm_add_xnu_devicetree_prop(devicetree, "cache-status-reg-offset", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc");
+    arm_add_xnu_devicetree_prop(devicetree, "cache-status-reg-mask", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc");
+    arm_add_xnu_devicetree_prop(devicetree, "cache-status-reg-value", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc");
+    arm_add_xnu_devicetree_prop(devicetree, "page-size-shift", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "lower-limit-reg-offset", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "lower-limit-reg-mask", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "upper-limit-reg-offset", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "upper-limit-reg-mask", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "lock-reg-offset", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "lock-reg-mask", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    arm_add_xnu_devicetree_prop(devicetree, "lock-reg-value", 4, (const char *)&data32, "/device-tree/chosen/lock-regs/amcc/amcc-ctrr-a");
+    
     MemoryRegion *sysram = g_new(MemoryRegion, 1);
 
     memory_region_init_ram(sysram, NULL, "sys.ram", s->bootinfo.ram_size, NULL);
@@ -120,7 +146,7 @@ static void d22_machine_init(MachineState *machine)
 
     qemu_devices_reset();
 
-    xnu_init_memory(&s->bootinfo, devicetree, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
+    xnu_init_memory(&s->bootinfo, s, devicetree, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
     d22_create_aic(s, arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/aic"));
     d22_create_s3c_uart(s, serial_hd(0), arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io/uart0"));
 
@@ -185,6 +211,30 @@ static void d22_machine_set_boot_ramdisk(Object *obj, const char *value, Error *
     g_strlcpy(s->ramdisk_fn, value, sizeof(s->ramdisk_fn));
 }
 
+static char *d22_machine_get_boot_trustcache(Object *obj, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    return g_strdup(s->trustcache_fn);
+}
+
+static void d22_machine_set_boot_trustcache(Object *obj, const char *value, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    g_strlcpy(s->trustcache_fn, value, sizeof(s->trustcache_fn));
+}
+
+static void d22_machine_get_nvram_file(Object *obj, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    return g_strdup(s->nvram_file);
+}
+
+static void d22_machine_set_nvram_file(Object *obj, const char *value, Error **errp)
+{
+    D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
+    g_strlcpy(s->nvram_file, value, sizeof(s->nvram_file));
+}
+
 static char *d22_machine_get_bootargs(Object *obj, Error **errp)
 {
     D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
@@ -239,6 +289,9 @@ static void d22_instance_init(Object *obj) {
     object_property_add_str(obj, "ramdisk",
                             d22_machine_get_boot_ramdisk,
                             d22_machine_set_boot_ramdisk);
+    object_property_add_str(obj, "trustcache",
+                            d22_machine_get_boot_trustcache,
+                            d22_machine_set_boot_trustcache);
     object_property_add_str(obj, "bootargs",
                             d22_machine_get_bootargs,
                             d22_machine_set_bootargs);
