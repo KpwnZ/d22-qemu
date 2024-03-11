@@ -26,6 +26,7 @@ typedef struct D22IDeviceMachineState {
     char devicetree_fn[1024];
     char ramdisk_fn[1024];
     char trustcache_fn[1024];
+    char nvram_fn[1024];
     char bootargs[1024];
     XNUDTNode *devicetree;
     hwaddr bootargs_pa;

@@ -92,6 +92,11 @@ static void d22_machine_init(MachineState *machine)
     s->bootinfo.kernel_cmdline = s->bootargs;
     s->bootinfo.loader_start = 0x40000000;
 
+    gchar *nvram_proxy_data = NULL;
+    gsize nvram_proxy_len = 0;
+    g_file_get_contents(s->nvram_fn, &nvram_proxy_data, &nvram_proxy_len, NULL);
+    assert(nvram_proxy_data != NULL);
+
     gsize dt_len = 0;
     gchar *dt_data = NULL;
     g_file_get_contents(s->bootinfo.dtb_filename, &dt_data, &dt_len, NULL);
@@ -146,8 +151,8 @@ static void d22_machine_init(MachineState *machine)
 
     qemu_devices_reset();
 
-    xnu_init_memory(&s->bootinfo, s, devicetree, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
-    d22_create_aic(s, arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/aic"));
+    xnu_init_memory(&s->bootinfo, s, devicetree, (const uint8_t *)nvram_proxy_data, &entry, as, sysmem, &s->pc_pa, &s->bootargs_pa);
+    d22_create_aic(s, arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io/aic"));
     d22_create_s3c_uart(s, serial_hd(0), arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io/uart0"));
 
     qdev_connect_gpio_out(cpudev, GTIMER_PHYS, qdev_get_gpio_in(cpudev, ARM_CPU_FIQ));
@@ -223,16 +228,16 @@ static void d22_machine_set_boot_trustcache(Object *obj, const char *value, Erro
     g_strlcpy(s->trustcache_fn, value, sizeof(s->trustcache_fn));
 }
 
-static void d22_machine_get_nvram_file(Object *obj, Error **errp)
+static char *d22_machine_get_nvram_file(Object *obj, Error **errp)
 {
     D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
-    return g_strdup(s->nvram_file);
+    return g_strdup(s->nvram_fn);
 }
 
 static void d22_machine_set_nvram_file(Object *obj, const char *value, Error **errp)
 {
     D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
-    g_strlcpy(s->nvram_file, value, sizeof(s->nvram_file));
+    g_strlcpy(s->nvram_fn, value, sizeof(s->nvram_fn));
 }
 
 static char *d22_machine_get_bootargs(Object *obj, Error **errp)
@@ -292,6 +297,9 @@ static void d22_instance_init(Object *obj) {
     object_property_add_str(obj, "trustcache",
                             d22_machine_get_boot_trustcache,
                             d22_machine_set_boot_trustcache);
+    object_property_add_str(obj, "nvram",
+                            d22_machine_get_nvram_file,
+                            d22_machine_set_nvram_file);
     object_property_add_str(obj, "bootargs",
                             d22_machine_get_bootargs,
                             d22_machine_set_bootargs);
