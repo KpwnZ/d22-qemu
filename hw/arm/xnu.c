@@ -85,25 +85,24 @@ void macho_file_highest_lowest(const char *data, hwaddr phys_base,
 static size_t arm_load_xnu_bootargs(struct arm_boot_info *info, AddressSpace *as, MemoryRegion *mem,
                                     uint64_t bootargs_addr, uint64_t virt_base,
                                     uint64_t phys_base, uint64_t top_of_kernel_data,
-                                    uint64_t dtb_address, uint64_t dtb_size, uint64_t ram_size) {
-    struct xnu_boot_args boot_args;
-    memset(&boot_args, 0, sizeof(boot_args));
-    boot_args.Revision = kXNUBootArgsRevision2;
-    boot_args.Version = kXNUBootArgsVersion2;
-    boot_args.virtBase = virt_base;
-    boot_args.physBase = phys_base;
-    boot_args.memSize = ram_size;
+                                    uint64_t dtb_address, uint64_t dtb_size, uint64_t ram_size,
+                                    MachineState *m) {
+    D22IDeviceMachineState *d22 = D22_IDEVICE_MACHINE(m);
+    memset(&d22->boot_args, 0, sizeof(d22->boot_args));
+    d22->boot_args.Revision = kXNUBootArgsRevision2;
+    d22->boot_args.Version = kXNUBootArgsVersion2;
+    d22->boot_args.virtBase = virt_base;
+    d22->boot_args.physBase = phys_base;
+    d22->boot_args.memSize = ram_size;
     // top of kernel data (kernel, dtb, any ramdisk) + boot args size + padding to 16k
-    boot_args.topOfKernelData = ((top_of_kernel_data + sizeof(boot_args)) + 0xffffull) & ~0xffffull;
+    d22->boot_args.topOfKernelData = ((top_of_kernel_data + sizeof(d22->boot_args)) + 0xffffull) & ~0xffffull;
     // todo: video, machine type, cmdline, flags
-    strncpy(boot_args.CommandLine, info->kernel_cmdline, sizeof(boot_args.CommandLine));
-    boot_args.deviceTreeP = (void *)dtb_address;
-    boot_args.deviceTreeLength = dtb_size;
-    boot_args.memSizeActual = 0;
-    boot_args.Video.v_baseAddr = 0x41414141;
-    boot_args.Video.v_display = 1;
-    rom_add_blob_fixed_as("xnu_boot_args", &boot_args, sizeof(boot_args), bootargs_addr, as);
-    return sizeof(boot_args);
+    strncpy(d22->boot_args.CommandLine, info->kernel_cmdline, sizeof(d22->boot_args.CommandLine));
+    d22->boot_args.deviceTreeP = (void *)dtb_address;
+    d22->boot_args.deviceTreeLength = dtb_size;
+    d22->boot_args.memSizeActual = 0;
+    rom_add_blob_fixed_as("xnu_boot_args", &d22->boot_args, sizeof(d22->boot_args), bootargs_addr, as);
+    return sizeof(d22->boot_args);
 }
 
 XNUDTNode *arm_load_xnu_devicetree(gchar *blob) {
@@ -409,7 +408,7 @@ int64_t xnu_init_memory(struct arm_boot_info *info,
                           phys_ptr,  // top of kernel data
                           dtb_va,
                           dt_len,
-                          info->ram_size);
+                          info->ram_size, m);
     phys_base += (sizeof(struct xnu_boot_args) + 0xffffull) & ~0xffffull;
     
 
