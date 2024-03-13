@@ -69,7 +69,9 @@ uint64_t va2pa(uint64_t va, struct arm_boot_info *info);
 XNUDTNode *arm_load_xnu_devicetree(gchar *blob);
 
 int64_t xnu_init_memory(struct arm_boot_info *info,
+						MachineState *m,
 						XNUDTNode *devicetree,
+						const uint8_t *nvram_proxy_data,
                         hwaddr *pentry,
                         AddressSpace *as,
                         MemoryRegion *sysmem,
