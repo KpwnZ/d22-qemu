@@ -18,6 +18,7 @@ XNUDTProp *arm_set_xnu_devicetree_prop(XNUDTProp *n, const char *name, uint32_t 
 void arm_print_xnu_devicetree_node(XNUDTNode *node, int depth);
 void arm_add_xnu_devicetree_prop(XNUDTNode *root, const char *name, uint32_t len, const char *value, const char *path);
 void arm_remove_xnu_devicetree_prop(XNUDTNode *root, const char *name, const char *path);
+void arm_remove_xnu_devicetree_node(XNUDTNode *root, const char *path);
 void arm_save_devicetree(XNUDTNode *root, const char *path);
 void arm_write_devicetree_to_memory(XNUDTNode *root, uint8_t **buf, uint64_t *size);
 XNUDTNode *arm_parse_xnu_devicetree(gchar *blob);

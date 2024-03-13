@@ -174,6 +174,34 @@ void arm_remove_xnu_devicetree_prop(XNUDTNode *root, const char *name, const cha
     free(prop);
 }
 
+void arm_remove_xnu_devicetree_node(XNUDTNode *root, const char *path) {
+    assert(root != NULL);
+    char *p = strdup(path);
+    char *node_name;
+    XNUDTNode *prev = root;
+    node_name = strtok(p, "/");
+    while (node_name != NULL) {
+        node_name = strtok(NULL, "/");
+        prev = root;
+        if (node_name) root = arm_get_xnu_devicetree_node_by_name(root, node_name);
+        if (!root) {
+            printf("node not found: %s", node_name);
+            exit(1);
+        }
+    }
+    node_name = strrchr(path, '/');
+    printf("node_name: %s\n", node_name + 1);
+    prev->nchildren--;
+    for (GList *l = prev->children; l != NULL; l = l->next) {
+        XNUDTNode *node = (XNUDTNode *)l->data;
+        XNUDTProp *prop = arm_get_xnu_devicetree_prop(node, "name");
+        if (strncmp((const char *)prop->value, node_name + 1, strlen(node_name + 1)) == 0) {
+            prev->children = g_list_delete_link(prev->children, l);
+            break;
+        }
+    }
+}
+
 void arm_add_xnu_devicetree_prop(XNUDTNode *root, const char *name, uint32_t len, const char *value, const char *path) {
     assert(root != NULL);
     assert(name != NULL);
