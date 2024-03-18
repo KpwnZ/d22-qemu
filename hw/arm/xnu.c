@@ -93,7 +93,6 @@ static size_t arm_load_xnu_bootargs(struct arm_boot_info *info, AddressSpace *as
     d22->boot_args.Version = kXNUBootArgsVersion2;
     d22->boot_args.virtBase = virt_base;
     d22->boot_args.physBase = phys_base;
-    d22->boot_args.memSize = ram_size;
     // top of kernel data (kernel, dtb, any ramdisk) + boot args size + padding to 16k
     d22->boot_args.topOfKernelData = ((top_of_kernel_data + sizeof(d22->boot_args)) + 0xffffull) & ~0xffffull;
     // todo: video, machine type, cmdline, flags
@@ -276,12 +275,14 @@ int64_t xnu_init_memory(struct arm_boot_info *info,
     uint64_t high = 0;
 
     g_file_get_contents(info->kernel_filename, &data, &len, NULL);
+    gchar *macho_hdr = data;
     if(len <= 0) { exit(0); }
     while (*(uint32_t *)data != 0xFEEDFACF) {
         data += 0x4;
     }
     ismacho = *(uint32_t *)data == 0xFEEDFACF;
     if (!ismacho) {
+        fprintf(stderr, "[!] invalid file format\n");
         return -1;
     }
     struct mach_header_64 *mh = (struct mach_header_64 *)data;
@@ -359,7 +360,7 @@ int64_t xnu_init_memory(struct arm_boot_info *info,
 	*pc_addr = pc;
     printf("[*] kernel phy base: 0x%llx\n", rom_base);
     rom_add_blob_fixed_as("xnu.kernel", rom_buf, size, rom_base, as);
-    g_free(data);
+    g_free(macho_hdr);
     g_free(rom_buf);
     // allocate_and_copy(sysmem, as, "macho", rom_base, size, rom_buf);
 	used_ram += (align64(high) - low);

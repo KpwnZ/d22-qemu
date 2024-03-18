@@ -26,9 +26,7 @@
 #include "hw/arm/xnudt.h"
 #include "hw/arm/apple-aic.h"
 
-#define DEBUG_APPLE_AIC 1
-
-#if DEBUG_APPLE_AIC
+#ifdef DEBUG_APPLE_AIC
 #define APPLE_AIC_DEBUG_PRINT(fmt, ...) \
     do { \
         fprintf(stdout, "\033[33m[AppleAIC] " fmt "\033[0m", ## __VA_ARGS__); \
@@ -62,6 +60,8 @@ static uint64_t apple_aic_read(void *opaque, hwaddr offset, unsigned size) {
 static void apple_aic_write(void *opaque, hwaddr offset, uint64_t value, unsigned size) {
     AppleAICState *aic = APPLE_AIC(opaque);
     APPLE_AIC_DEBUG_PRINT("write at offset 0x%llx value 0x%llx size %u\n", offset, value, size);
+    CPUARMState env = aic->cpu->env;
+    APPLE_AIC_DEBUG_PRINT("cpu pc=0x%llx\n", env.pc);
 }
 
 static const MemoryRegionOps apple_aic_ops = {

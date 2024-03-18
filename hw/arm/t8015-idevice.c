@@ -12,12 +12,12 @@
 #include "hw/arm/exynos4210.h"
 #include "hw/arm/apple-aic.h"
 #include "hw/arm/xnudt.h"
+#include "hw/display/d22-display.h"
 
 static void d22_create_s3c_uart(D22IDeviceMachineState* m, Chardev *chr, XNUDTNode *node)
 {
     assert(node != NULL);
     qemu_irq irq;
-    DeviceState *d;
     SysBusDevice *s;
     hwaddr base = 0; // 0x22e600000;
     XNUDTProp *prop = arm_get_xnu_devicetree_prop(node, "reg");
@@ -41,6 +41,11 @@ static void d22_create_aic(void *opaque, XNUDTNode *node) {
         get_system_memory(), aic->mapping_base, aic->chip.iomem, 0);
     qdev_connect_gpio_out(DEVICE(aic), 0, qdev_get_gpio_in(DEVICE(s->cpu), ARM_CPU_FIQ));
     s->peripherals.aic = aic;
+}
+
+static void d22_create_display(D22IDeviceMachineState *s) {
+    s->boot_args.Video.v_display = 1;
+    MemoryRegion *vram = g_new(MemoryRegion, 1);   
 }
 
 static void d22_cpu_reset(void *opaque) 
@@ -114,8 +119,11 @@ static void d22_machine_init(MachineState *machine)
     s->soc_size = ranges[2];
 
     node = arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/chosen");
-    arm_add_xnu_devicetree_prop(devicetree, "dram-base", 8, (const char *)&s->bootinfo.loader_start, "/device-tree/chosen");
-    arm_add_xnu_devicetree_prop(devicetree, "dram-size", 8, (const char *)&s->bootinfo.ram_size, "/device-tree/chosen");
+    if (node) {
+        arm_add_xnu_devicetree_prop(devicetree, "dram-base", 8, (const char *)&s->bootinfo.loader_start, "/device-tree/chosen");
+        arm_add_xnu_devicetree_prop(devicetree, "dram-size", 8, (const char *)&s->bootinfo.ram_size, "/device-tree/chosen");
+    }
+    s->boot_args.memSize = s->bootinfo.ram_size;
 
     uint32_t aperture_count = 0, aperture_size = 0;
     arm_add_xnu_devicetree_prop(devicetree, "aperture-count", 4, (const char *)&aperture_count, "/device-tree/chosen/lock-regs/amcc");
@@ -155,7 +163,7 @@ static void d22_machine_init(MachineState *machine)
     d22_create_aic(s, arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io/aic"));
     d22_create_s3c_uart(s, serial_hd(0), arm_get_xnu_devicetree_node_by_path(devicetree, "/device-tree/arm-io/uart0"));
 
-    qdev_connect_gpio_out(cpudev, GTIMER_PHYS, qdev_get_gpio_in(cpudev, ARM_CPU_FIQ));
+    qdev_connect_gpio_out(cpudev, GTIMER_VIRT, qdev_get_gpio_in(cpudev, ARM_CPU_FIQ));
 
     qemu_register_reset(d22_cpu_reset, s);
 }
@@ -252,11 +260,13 @@ static void d22_machine_set_bootargs(Object *obj, const char *value, Error **err
     g_strlcpy(s->bootargs, value, sizeof(s->bootargs));
 }
 
-static void d22_machine_get_ram_size(Object *obj, Error **errp)
+static char *d22_machine_get_ram_size(Object *obj, Error **errp)
 {
     D22IDeviceMachineState *s = D22_IDEVICE_MACHINE(obj);
     uint64_t value = s->bootinfo.ram_size;
-    s->bootinfo.ram_size = value;
+    char *ret = g_new(char, 32);
+    snprintf(ret, 32, "%" PRIu64, value);
+    return ret;
 }
 
 static void d22_machine_set_ram_size(Object *obj, const char *value, Error **errp)

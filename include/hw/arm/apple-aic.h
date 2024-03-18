@@ -29,7 +29,7 @@
 #include "qom/object.h"
 #include "hw/sysbus.h"
 
-#define DEBUG_APPLE_AIC
+// #define DEBUG_APPLE_AIC
 
 #define TYPE_APPLE_AIC "apple.aic"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleAICState, APPLE_AIC)
@@ -47,10 +47,12 @@ typedef struct AppleAICState {
     unsigned ipid_cnt;
     unsigned irq_cnt;
     qemu_irq *irqs;
+    QEMUTimer *timer;
     struct {
         void *aic_state;
         MemoryRegion *iomem;
     } chip;
+    ARMCPU *cpu;
 } AppleAICState;
 
 AppleAICState *create_apple_aic(hwaddr soc_base, unsigned cpus_cnt, XNUDTNode *node);
