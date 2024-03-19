@@ -88,7 +88,6 @@ static size_t arm_load_xnu_bootargs(struct arm_boot_info *info, AddressSpace *as
                                     uint64_t dtb_address, uint64_t dtb_size, uint64_t ram_size,
                                     MachineState *m) {
     D22IDeviceMachineState *d22 = D22_IDEVICE_MACHINE(m);
-    memset(&d22->boot_args, 0, sizeof(d22->boot_args));
     d22->boot_args.Revision = kXNUBootArgsRevision2;
     d22->boot_args.Version = kXNUBootArgsVersion2;
     d22->boot_args.virtBase = virt_base;
